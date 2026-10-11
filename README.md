@@ -71,10 +71,11 @@ daily history, and per-category totals.
 | --- | --- | --- |
 | `idle_timeout` | `300` | seconds without input before time stops counting; `0` disables |
 | `track_titles` | `false` | also store window titles (privacy: off by default) |
+| `title_retention_days` | `30` | delete titles older than this; time per app is kept. `0` = forever |
 | `day_start_hour` | `0` | local hour a new day starts; `4` makes late nights count towards the previous day |
 | `heartbeat_seconds` | `5` | how often the open interval is flushed (max data lost on a crash) |
 
-The plugin's settings page writes the first three keys for you, plus a few
+The plugin's settings page writes the first four keys for you, plus a few
 display-only options (refresh interval, top-app icon in the bar, desktop
 widget opacity).
 
@@ -97,6 +98,22 @@ widget opacity).
   Communication, AudioVideo → Media, Game → Games, Office → Productivity, …).
 - An app that isn't listed is shown under its own name in the category
   breakdown, never as "unknown".
+
+## Window titles
+
+With `track_titles = true`, clicking an app in the popout also shows which
+windows you used (for a browser, the page titles), ranked by time.
+
+- Titles are cleaned up before grouping: the app's own suffix
+  (" — Mozilla Firefox") and unread counters ("(3) Inbox") are removed.
+- Private-browsing windows are stored only as "Private window", never with
+  their real title.
+- Titles older than `title_retention_days` are deleted; the time per app is kept.
+- Only data recorded after you turn the option on has titles. Earlier time
+  shows up as "Not recorded".
+
+From the CLI: `screentime summary --app firefox_firefox` (add `--json` for
+the plugin format).
 
 ## How tracking works
 
