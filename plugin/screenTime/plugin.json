@@ -1,0 +1,19 @@
+{
+    "id": "screenTime",
+    "name": "Screen Time",
+    "description": "How long you spend in each app, tracked accurately on niri. Bar pill, popout and desktop widget.",
+    "version": "0.1.0",
+    "author": "Julius von Smercek",
+    "type": "composite",
+    "capabilities": ["daemon", "dankbar-widget", "desktop-widget"],
+    "icon": "timelapse",
+    "components": {
+        "daemon": "./ScreenTimeService.qml",
+        "widget": "./ScreenTimeWidget.qml",
+        "desktop": "./ScreenTimeDesktop.qml"
+    },
+    "settings": "./ScreenTimeSettings.qml",
+    "requires_dms": ">=1.6.0",
+    "dependencies": ["screentime"],
+    "permissions": ["settings_read", "settings_write", "process"]
+}
