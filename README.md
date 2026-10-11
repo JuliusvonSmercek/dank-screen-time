@@ -155,11 +155,39 @@ configure to launch it can query it.
 
 **Enable it** in the plugin settings ("Allow AI assistants to read screen
 time") or with `screentime config set mcp_enabled true`. While it's off, every
-tool call is refused. Then register it with your client, e.g. Claude Code:
+tool call is refused. Then register it with your client.
+
+**Claude Code.** Use `--scope user` so it's available in every project. The
+default scope (`local`) registers the server only for the directory you ran
+the command in.
 
 ```sh
-claude mcp add screentime -- ~/.local/bin/screentime mcp
+claude mcp add --scope user screentime -- ~/.local/bin/screentime mcp
 ```
+
+**Claude Desktop** keeps its own list and doesn't read Claude Code's
+settings. Add a top-level `mcpServers` key to its config file
+(`~/.config/Claude/claude_desktop_config.json` on Linux), using the absolute
+path, then fully quit and restart the app. It only reads the list at startup.
+
+```json
+"mcpServers": {
+  "screentime": {
+    "command": "/home/<you>/.local/bin/screentime",
+    "args": ["mcp"]
+  }
+}
+```
+
+**Check that it works:**
+
+- `claude mcp list` should show `screentime: … - √ Connected`;
+  `claude mcp get screentime` shows its scope.
+- In a Claude Code session, `/mcp` lists the server and its tools.
+- Ask something like "how much screen time did I have today?". Every request
+  is logged in `~/.local/share/screentime/mcp.log`.
+- "Connected" only means the client can start the server. If the answers say
+  access is turned off, enable it in the plugin settings.
 
 **Tools:** `get_summary` (day/week/month totals, apps, categories, chart),
 `get_app_usage` (one app's daily history), `list_apps`, and

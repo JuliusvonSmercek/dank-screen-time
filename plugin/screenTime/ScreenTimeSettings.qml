@@ -175,7 +175,7 @@ PluginSettings {
         wrapMode: Text.WordWrap
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
-        text: I18n.trFor("screenTime", "Setup for Claude Code: claude mcp add screentime -- ~/.local/bin/screentime mcp — every request is logged to ~/.local/share/screentime/mcp.log.")
+        text: I18n.trFor("screenTime", "Setup for Claude Code: claude mcp add --scope user screentime -- ~/.local/bin/screentime mcp — every request is logged to ~/.local/share/screentime/mcp.log.")
     }
 
     // -- desktop widget instance -------------------------------------------------
