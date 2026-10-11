@@ -37,6 +37,13 @@ class Daemon:
         self.cfg_path = paths.config_file()
         self.cfg = config_mod.load(self.cfg_path)
         self.cfg_mtime = self._mtime()
+        paths.secure_dir(paths.data_dir())
+        paths.secure_dir(paths.runtime_dir())
+        for name in ("screentime.db", "screentime.db-wal", "screentime.db-shm", "mcp.log"):
+            try:
+                (paths.data_dir() / name).chmod(0o600)
+            except OSError:
+                pass
         self.store = Store(paths.db_file())
         self.store.clamp_future(time.time())
         self.tracker = Tracker(self.store, track_titles=self.cfg.track_titles)

@@ -240,6 +240,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    paths.private_umask()
     args = build_parser().parse_args(argv)
     try:
         return args.func(args)

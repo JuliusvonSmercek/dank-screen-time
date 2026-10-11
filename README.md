@@ -238,6 +238,23 @@ logind via gdbus ───────┘          ▲
   and hour boundaries at query time, so midnight rollover and 23/25-hour days
   come out right.
 
+## Security
+
+- **No network exposure.** Nothing listens on a port. The plugin talks to the
+  CLI as a subprocess, and MCP clients do the same over stdio.
+- **Private files.** The database, `mcp.log` and the runtime status file are
+  created readable by you only (`0700` directories, `0600` files).
+- **Untrusted text.** App ids are chosen by each app, and browser window
+  titles by websites. They are stored with bound SQL parameters, shown as
+  plain text in the UI (never as HTML), escaped when written to
+  `categories.toml`, never used as file paths, and cleaned and marked as
+  untrusted in MCP results.
+- **No shell injection.** The plugin passes arguments to the CLI as separate
+  argv entries, never as a shell string.
+- **What it can't protect against:** any program running as your user can
+  read the database or fake an app_id, just as it can read the rest of your
+  home directory.
+
 ## Debugging
 
 ```sh

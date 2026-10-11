@@ -252,6 +252,7 @@ class Resolver:
         elif e:
             info = AppInfo(app_id, e.name, e.icon or app_id, e.id, e.categories)
         else:
-            info = AppInfo(app_id, prettify(app_id), app_id, None, [])
+            # app_ids are chosen by the (untrusted) client: never treat one as a path.
+            info = AppInfo(app_id, prettify(app_id), "" if "/" in app_id else app_id, None, [])
         self._cache[app_id] = info
         return info

@@ -72,8 +72,20 @@ class Categorizer:
         return None
 
 
+def _clean(text: str) -> str:
+    return "".join(ch if ch.isprintable() else " " for ch in text)
+
+
 def _q(text: str) -> str:
-    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    out = []
+    for ch in text:
+        if ch in '"\\':
+            out.append("\\" + ch)
+        elif not ch.isprintable():
+            out.append(f"\\u{ord(ch):04x}")
+        else:
+            out.append(ch)
+    return '"' + "".join(out) + '"'
 
 
 HEADER = """\
@@ -113,7 +125,7 @@ def generate(resolver: Resolver, existing_text: str | None, extra_app_ids: list[
         if cat is None or entry.id.lower() in known:
             continue
         known.add(entry.id.lower())
-        lines.append(f"{_q(entry.id)} = {_q(cat)}  # {entry.name}")
+        lines.append(f"{_q(entry.id)} = {_q(cat)}  # {_clean(entry.name)}")
     for app_id in extra_app_ids:
         info = resolver.resolve(app_id)
         if app_id.lower() in known or (info.desktop_id and info.desktop_id.lower() in known):
@@ -121,7 +133,7 @@ def generate(resolver: Resolver, existing_text: str | None, extra_app_ids: list[
         cat = derive(info.categories)
         if cat:
             known.add(app_id.lower())
-            lines.append(f"{_q(app_id)} = {_q(cat)}  # {info.name}")
+            lines.append(f"{_q(app_id)} = {_q(cat)}  # {_clean(info.name)}")
 
     if existing_text:
         text = existing_text if existing_text.endswith("\n") else existing_text + "\n"

@@ -40,7 +40,7 @@ PluginComponent {
         if (parts[1])
             args.push("--date", parts[1]);
         if (app)
-            args.push("--app", app);
+            args.push("--app=" + app);   // one token: an app_id starting with "-" stays a value
         inFlight[key] = true;
         Proc.runCommand("screenTime." + key, cliCommand(args), (stdout, exitCode) => {
             delete inFlight[key];

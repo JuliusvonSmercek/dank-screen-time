@@ -79,3 +79,9 @@ function mondayOf(iso) {
     d.setDate(d.getDate() - back);
     return isoDate(d);
 }
+
+// DMS's tooltip auto-detects rich text. Window titles come from websites, so
+// replace the characters that could turn one into HTML (e.g. a remote <img>).
+function plain(text) {
+    return String(text || "").replace(/</g, "‹").replace(/>/g, "›").replace(/&/g, "＆");
+}

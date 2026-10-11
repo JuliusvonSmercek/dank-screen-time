@@ -24,6 +24,20 @@ def runtime_dir() -> Path:
     return Path(base) / APP
 
 
+def private_umask() -> None:
+    """Files we create (database, logs, status) are readable by the user only."""
+    os.umask(0o077)
+
+
+def secure_dir(path: Path) -> Path:
+    path.mkdir(parents=True, exist_ok=True)
+    try:
+        path.chmod(0o700)
+    except OSError:
+        pass
+    return path
+
+
 def config_file() -> Path:
     return config_dir() / "config.toml"
 

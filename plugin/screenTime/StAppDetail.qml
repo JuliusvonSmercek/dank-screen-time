@@ -313,7 +313,7 @@ Column {
                         hoverEnabled: true
                         onEntered: {
                             if (titleText.truncated)
-                                titleTip.show(titleRow.modelData.title, titleText, 0, 0, "top");
+                                titleTip.show(Fmt.plain(titleRow.modelData.title), titleText, 0, 0, "top");
                         }
                         onExited: titleTip.hide()
                     }
