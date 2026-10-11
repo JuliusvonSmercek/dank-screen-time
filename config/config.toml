@@ -20,3 +20,12 @@ day_start_hour = 0
 # How often the open interval is flushed to disk, in seconds. A crash loses at
 # most this much.
 heartbeat_seconds = 5
+
+# AI assistant access over MCP (`screentime mcp`, started by the client over
+# stdio; no network port). Read-only. Off by default.
+mcp_enabled = false
+# Also expose window titles to the assistant. Titles can contain private text
+# and, for browsers, text chosen by websites.
+mcp_allow_titles = false
+# How far back the assistant may query, in days.
+mcp_max_days = 90

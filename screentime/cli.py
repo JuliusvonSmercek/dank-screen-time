@@ -187,6 +187,12 @@ def cmd_log(args) -> int:
     return 0
 
 
+def cmd_mcp(args) -> int:
+    from . import mcp
+
+    return mcp.serve()
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="screentime", description="Screen Time for niri")
     p.add_argument("--version", action="version", version=f"screentime {__version__}")
@@ -223,6 +229,9 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--unresolved", action="store_true", help="only apps without a desktop file")
     a.add_argument("--json", action="store_true")
     a.set_defaults(func=cmd_apps)
+
+    m = sub.add_parser("mcp", help="read-only MCP server on stdio, started by an AI client")
+    m.set_defaults(func=cmd_mcp)
 
     lg = sub.add_parser("log", help="most recent raw intervals (debugging)")
     lg.add_argument("--limit", type=int, default=30)

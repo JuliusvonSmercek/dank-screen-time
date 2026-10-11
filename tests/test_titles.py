@@ -38,6 +38,7 @@ class NormalizeTest(unittest.TestCase):
 class TitleQueryTest(unittest.TestCase):
     def setUp(self):
         self.store = Store(":memory:")
+        self.addCleanup(self.store.close)
         self.now = dt.datetime(2026, 10, 11, 12, 0).timestamp()
 
     def add(self, app, start, end, title):

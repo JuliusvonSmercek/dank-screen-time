@@ -37,6 +37,7 @@ def rows(store):
 class TrackerTest(unittest.TestCase):
     def setUp(self):
         self.store = Store(":memory:")
+        self.addCleanup(self.store.close)
         self.t = Tracker(self.store)
         self.c = Clock()
 

@@ -25,6 +25,7 @@ class TZMixin:
         os.environ["TZ"] = self.tz
         time.tzset()
         self.store = Store(":memory:")
+        self.addCleanup(self.store.close)
         self.resolver = Resolver(entries={})
 
     def tearDown(self):

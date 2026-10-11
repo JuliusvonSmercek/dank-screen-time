@@ -25,6 +25,12 @@ class Config:
     day_start_hour: int = 0
     # How often the open interval is flushed to disk (bounds data loss on crash).
     heartbeat_seconds: int = 5
+    # Let AI assistants query usage through `screentime mcp` (stdio, read-only).
+    mcp_enabled: bool = False
+    # Also let them read window titles (sensitive; page titles are untrusted text).
+    mcp_allow_titles: bool = False
+    # How far back MCP queries may look, in days.
+    mcp_max_days: int = 90
 
     def validate(self) -> "Config":
         self.idle_timeout = max(0, int(self.idle_timeout))
@@ -32,6 +38,9 @@ class Config:
         self.title_retention_days = max(0, int(self.title_retention_days))
         self.day_start_hour = min(23, max(0, int(self.day_start_hour)))
         self.heartbeat_seconds = min(60, max(1, int(self.heartbeat_seconds)))
+        self.mcp_enabled = bool(self.mcp_enabled)
+        self.mcp_allow_titles = bool(self.mcp_allow_titles)
+        self.mcp_max_days = max(1, int(self.mcp_max_days))
         return self
 
 

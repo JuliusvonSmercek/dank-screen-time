@@ -107,7 +107,9 @@ PluginComponent {
         "idleTimeout": ["idle_timeout", v => String(v)],
         "trackTitles": ["track_titles", v => !!v],
         "titleRetention": ["title_retention_days", v => String(v)],
-        "dayStartHour": ["day_start_hour", v => String(v)]
+        "dayStartHour": ["day_start_hour", v => String(v)],
+        "mcpEnabled": ["mcp_enabled", v => !!v],
+        "mcpAllowTitles": ["mcp_allow_titles", v => !!v]
     })
     property bool adopted: false
 

@@ -98,6 +98,9 @@ daily history, and per-category totals.
 | `title_retention_days` | `30` | delete titles older than this; time per app is kept. `0` = forever |
 | `day_start_hour` | `0` | local hour a new day starts; `4` makes late nights count towards the previous day |
 | `heartbeat_seconds` | `5` | how often the open interval is flushed (max data lost on a crash) |
+| `mcp_enabled` | `false` | allow AI assistants to query usage via `screentime mcp` |
+| `mcp_allow_titles` | `false` | also allow them to read window titles |
+| `mcp_max_days` | `90` | how far back MCP queries may look |
 
 The plugin's settings page writes the first four keys for you, plus a few
 display-only options (refresh interval, top-app icon in the bar, desktop
@@ -138,6 +141,44 @@ windows you used (for a browser, the page titles), ranked by time.
 
 From the CLI: `screentime summary --app firefox_firefox` (add `--json` for
 the plugin format).
+
+## AI assistants (MCP)
+
+`screentime mcp` is a read-only [MCP](https://modelcontextprotocol.io) server,
+so an AI assistant can answer questions like "how much did I code this week
+compared to last?".
+
+**How it connects:** over **stdio**. The MCP client starts `screentime mcp` as
+its own subprocess and talks to it through stdin/stdout. No server is
+started, no port is opened and no password is needed: only programs you
+configure to launch it can query it.
+
+**Enable it** in the plugin settings ("Allow AI assistants to read screen
+time") or with `screentime config set mcp_enabled true`. While it's off, every
+tool call is refused. Then register it with your client, e.g. Claude Code:
+
+```sh
+claude mcp add screentime -- ~/.local/bin/screentime mcp
+```
+
+**Tools:** `get_summary` (day/week/month totals, apps, categories, chart),
+`get_app_usage` (one app's daily history), `list_apps`, and
+`get_window_titles`. The titles tool needs a second switch, "Also share window
+titles" (`mcp_allow_titles`).
+
+**Security and privacy:**
+
+- Read-only: no tool can change config, categories or data.
+- Whatever the tools return goes to the assistant's model provider. Usage
+  patterns, and window titles even more, can be personal.
+- Window titles are untrusted text: for browsers they are page titles chosen
+  by websites, and could contain prompt-injection attempts. They are therefore
+  off by default, stripped of control characters, truncated, and returned in a
+  field marked as untrusted. Don't share titles with a client that can also
+  run shell commands without asking you.
+- Queries are limited to the last `mcp_max_days` days (default 90).
+- Every call (tool and arguments, not the results) is appended to
+  `~/.local/share/screentime/mcp.log`.
 
 ## How tracking works
 

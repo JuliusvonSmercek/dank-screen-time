@@ -144,6 +144,40 @@ PluginSettings {
         text: I18n.trFor("screenTime", "Categories are edited in ~/.config/screentime/categories.toml.")
     }
 
+    StyledText {
+        visible: !root.isInstance
+        width: parent.width
+        text: I18n.trFor("screenTime", "AI assistants (MCP)")
+        font.pixelSize: Theme.fontSizeLarge
+        font.weight: Font.DemiBold
+        color: Theme.surfaceText
+    }
+
+    ToggleSetting {
+        visible: !root.isInstance
+        settingKey: "mcpEnabled"
+        label: I18n.trFor("screenTime", "Allow AI assistants to read screen time")
+        description: I18n.trFor("screenTime", "Read-only access for MCP clients you set up yourself (e.g. Claude Code). The client starts `screentime mcp` locally; no network port is opened. Data you share goes to that assistant's provider.")
+        defaultValue: false
+    }
+
+    ToggleSetting {
+        visible: !root.isInstance
+        settingKey: "mcpAllowTitles"
+        label: I18n.trFor("screenTime", "Also share window titles")
+        description: I18n.trFor("screenTime", "Titles can contain private text (mail subjects, documents) and, for browsers, text chosen by websites. Off by default.")
+        defaultValue: false
+    }
+
+    StyledText {
+        visible: !root.isInstance
+        width: parent.width
+        wrapMode: Text.WordWrap
+        font.pixelSize: Theme.fontSizeSmall
+        color: Theme.surfaceVariantText
+        text: I18n.trFor("screenTime", "Setup for Claude Code: claude mcp add screentime -- ~/.local/bin/screentime mcp — every request is logged to ~/.local/share/screentime/mcp.log.")
+    }
+
     // -- desktop widget instance -------------------------------------------------
 
     StyledText {
