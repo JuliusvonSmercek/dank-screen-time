@@ -5,6 +5,12 @@ focus on [niri](https://github.com/YaLTeR/niri), and a
 [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) plugin
 that shows it as a bar pill, a Material 3 popout and desktop widgets.
 
+<p align="center">
+  <img src="docs/popout-day.png" alt="Screen Time popout, day view: total, hourly chart, categories and apps" width="380">
+  &nbsp;
+  <img src="docs/popout-week.png" alt="Screen Time popout, week view: total, daily chart, categories and apps" width="380">
+</p>
+
 - **Accurate:** focus comes from niri's IPC; app_ids are resolved through
   `.desktop` files (Snap and Flatpak included), so nothing shows as "unknown".
 - **Only real use counts:** no time for empty workspaces, the launcher, idle,

@@ -110,7 +110,7 @@ DesktopPluginComponent {
             buckets: {
                 if (!root.summary)
                     return [];
-                const loc = Qt.locale();
+                const loc = Fmt.locale();
                 const pad = n => (n < 10 ? "0" : "") + n;
                 return root.summary.chart.buckets.map(b => {
                     if (root.view === "week") {

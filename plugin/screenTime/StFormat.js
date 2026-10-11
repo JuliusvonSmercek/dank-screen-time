@@ -85,3 +85,10 @@ function mondayOf(iso) {
 function plain(text) {
     return String(text || "").replace(/</g, "‹").replace(/>/g, "›").replace(/&/g, "＆");
 }
+
+// Locale for weekday and month names. The plugin's text is English-only, so
+// dates are English too instead of mixing in the system locale. Once
+// translations exist, return the DMS UI locale for translated languages.
+function locale() {
+    return Qt.locale("en_US");
+}

@@ -156,7 +156,7 @@ Column {
             buckets: {
                 if (!root.summary || !root.app)
                     return [];
-                const loc = Qt.locale();
+                const loc = Fmt.locale();
                 const today = root.summary.range.today;
                 const out = [];
                 for (let i = 0; i < root.dates.length; i++) {

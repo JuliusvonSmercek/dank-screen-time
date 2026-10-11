@@ -96,8 +96,11 @@ PopoutComponent {
         if (entry)
             shown = entry.data;
         request(false);
+        flick.contentY = 0;
         chart.replay();
     }
+
+    onDetailAppIdChanged: flick.contentY = 0
 
     function popoutScreenName() {
         const scr = root.parentPopout ? (root.parentPopout.triggerScreen || root.parentPopout.screen) : null;
@@ -121,6 +124,7 @@ PopoutComponent {
             root.kind = PluginService.getGlobalVar(root.pid, "lastKind", "day") === "week" ? "week" : "day";
             root.anchor = "";
             root.request(true);
+            flick.contentY = 0;
             chart.replay();
         }
     }
@@ -158,7 +162,7 @@ PopoutComponent {
     function rangeLabel() {
         if (!range)
             return kind === "day" ? tr("Today") : tr("This week");
-        const loc = Qt.locale();
+        const loc = Fmt.locale();
         if (kind === "day") {
             if (range.anchor === range.today)
                 return tr("Today");
@@ -200,7 +204,7 @@ PopoutComponent {
     function chartBuckets() {
         if (!shown)
             return [];
-        const loc = Qt.locale();
+        const loc = Fmt.locale();
         const pad = n => (n < 10 ? "0" : "") + n;
         return shown.chart.buckets.map(b => {
             if (shown.chart.unit === "hour") {
