@@ -1,0 +1,18 @@
+# Screen Time daemon configuration.
+# The daemon picks up changes automatically within a few seconds.
+# The DMS plugin's settings page writes to this file too.
+
+# Stop counting after this many seconds without keyboard/mouse input.
+# Apps that inhibit idle (video players, games) keep counting. 0 = disabled.
+idle_timeout = 300
+
+# Also store window titles. Off by default for privacy; only affects new data.
+track_titles = false
+
+# Local hour at which a new day starts (0 = midnight, 4 = late nights count
+# towards the previous day).
+day_start_hour = 0
+
+# How often the open interval is flushed to disk, in seconds. A crash loses at
+# most this much.
+heartbeat_seconds = 5
