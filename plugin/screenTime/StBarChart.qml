@@ -36,7 +36,7 @@ Item {
     property int hoverIndex: -1
 
     function yFor(seconds) {
-        return plotHeight - seconds / top * plotHeight;
+        return plotHeight - seconds / scaleTop * plotHeight;
     }
 
     // Gridlines and their labels.
