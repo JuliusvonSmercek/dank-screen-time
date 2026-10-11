@@ -266,3 +266,51 @@ def format_duration(seconds: float) -> str:
     if hours:
         return f"{hours} h"
     return f"{minutes} min"
+
+
+def app_titles(store, app_id: str, kind: str = "day", anchor: dt.date | None = None,
+               now: float | None = None, day_start_hour: int = 0, app_name: str = "",
+               status: dict | None = None, limit: int = 10) -> dict:
+    """Time per (cleaned-up) window title for one app over the selected range."""
+    from .titles import normalize
+
+    now = time.time() if now is None else now
+    if kind == "today":
+        kind = "day"
+    today = logical_date(now, day_start_hour)
+    anchor = min(anchor or today, today)
+    days = range_days(kind, anchor)
+    start = day_start(days[0], day_start_hour)
+    end = min(day_start(days[-1] + DAY, day_start_hour), now)
+    status = status if status is not None else daemon_status(now)
+    live_id = status.get("current_interval_id") if status.get("state") == "active" else None
+
+    by_title: dict[str, float] = defaultdict(float)
+    unrecorded = 0.0
+    rows = store.app_intervals_between(app_id, start, end) if store is not None and end > start else []
+    for iid, s, e, title in rows:
+        if iid == live_id:
+            e = max(e, now)
+        secs = min(e, end) - max(s, start)
+        if secs <= 0:
+            continue
+        if title is None:
+            unrecorded += secs
+            continue
+        by_title[normalize(title, app_name) or app_name or app_id] += secs
+
+    recorded = sum(by_title.values())
+    ranked = sorted(by_title.items(), key=lambda kv: -kv[1])
+    items = [
+        {"title": t, "seconds": round(secs), "share": secs / recorded if recorded else 0}
+        for t, secs in ranked[:limit]
+        if secs >= 1
+    ]
+    other = sum(secs for _, secs in ranked[limit:])
+    return {
+        "app_id": app_id,
+        "items": items,
+        "other_seconds": round(other),
+        "recorded_seconds": round(recorded),
+        "unrecorded_seconds": round(unrecorded),
+    }

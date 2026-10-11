@@ -62,6 +62,20 @@ PluginSettings {
     }
 
     SelectionSetting {
+        settingKey: "titleRetention"
+        label: I18n.trFor("screenTime", "Keep window titles for")
+        description: I18n.trFor("screenTime", "Older titles are deleted; the time spent per app is kept.")
+        options: [
+            { label: I18n.trFor("screenTime", "7 days"), value: "7" },
+            { label: I18n.trFor("screenTime", "30 days"), value: "30" },
+            { label: I18n.trFor("screenTime", "90 days"), value: "90" },
+            { label: I18n.trFor("screenTime", "1 year"), value: "365" },
+            { label: I18n.trFor("screenTime", "Forever"), value: "0" }
+        ]
+        defaultValue: "30"
+    }
+
+    SelectionSetting {
         settingKey: "dayStartHour"
         label: I18n.trFor("screenTime", "Day starts at")
         description: I18n.trFor("screenTime", "Late-night usage before this hour counts towards the previous day.")

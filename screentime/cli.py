@@ -10,7 +10,7 @@ from . import __version__, paths
 from . import categories as categories_mod
 from . import config as config_mod
 from .apps import Resolver
-from .query import daemon_status, format_duration, summarize
+from .query import app_titles, daemon_status, format_duration, summarize
 from .store import Store
 
 
@@ -40,6 +40,14 @@ def cmd_summary(args) -> int:
         store, kind=args.range, anchor=anchor, day_start_hour=cfg.day_start_hour,
         resolver=resolver, categorizer=categories_mod.Categorizer(categories_mod.load()),
     )
+    if args.app:
+        info = resolver.resolve(args.app)
+        data["titles"] = app_titles(
+            store, args.app, kind=args.range, anchor=anchor, day_start_hour=cfg.day_start_hour,
+            app_name=info.name, status=data["daemon"],
+        )
+        data["titles"]["tracking"] = cfg.track_titles
+        data["titles"]["retention_days"] = cfg.title_retention_days
     if args.json:
         json.dump(data, sys.stdout, separators=(",", ":"))
         sys.stdout.write("\n")
@@ -54,6 +62,15 @@ def cmd_summary(args) -> int:
     for app in data["apps"][: args.limit]:
         cat = app["category"] or "—"
         print(f"  {app['name']:<{width}}  {format_duration(app['seconds']):>12}  {app['share'] * 100:5.1f}%  {cat}")
+    if args.app:
+        t = data["titles"]
+        print(f"windows of {args.app}:" + ("" if t["tracking"] else "  (title tracking is off)"))
+        for item in t["items"]:
+            print(f"  {format_duration(item['seconds']):>12}  {item['title']}")
+        if t["other_seconds"]:
+            print(f"  {format_duration(t['other_seconds']):>12}  (other windows)")
+        if t["unrecorded_seconds"]:
+            print(f"  {format_duration(t['unrecorded_seconds']):>12}  (no title recorded)")
     if data["categories"]:
         print("categories:")
         for cat in data["categories"]:
@@ -184,6 +201,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--date", help="any date inside the range (YYYY-MM-DD), default today")
     s.add_argument("--json", action="store_true")
     s.add_argument("--limit", type=int, default=15, help="apps shown in text mode")
+    s.add_argument("--app", help="also break this app_id down by window title")
     s.set_defaults(func=cmd_summary)
 
     st = sub.add_parser("status", help="is the daemon running, and what is it counting")

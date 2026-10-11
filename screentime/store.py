@@ -97,12 +97,25 @@ class Store:
         self.db.execute("UPDATE intervals SET end = MAX(start, ?) WHERE end > ?", (now, now))
         self.db.execute("DELETE FROM intervals WHERE start > ?", (now,))
 
+    def purge_titles(self, before: float) -> int:
+        """Forget titles of intervals that ended before `before`."""
+        cur = self.db.execute(
+            "UPDATE intervals SET title = NULL WHERE title IS NOT NULL AND end < ?", (before,)
+        )
+        return cur.rowcount
+
     # -- reads (CLI) -------------------------------------------------------
 
     def intervals_between(self, start: float, end: float) -> list[tuple[int, str, float, float]]:
         return self.db.execute(
             "SELECT id, app_id, start, end FROM intervals WHERE end > ? AND start < ? ORDER BY start",
             (start, end),
+        ).fetchall()
+
+    def app_intervals_between(self, app_id: str, start: float, end: float) -> list[tuple[int, float, float, str | None]]:
+        return self.db.execute(
+            "SELECT id, start, end, title FROM intervals WHERE app_id = ? AND end > ? AND start < ? ORDER BY start",
+            (app_id, start, end),
         ).fetchall()
 
     def first_start(self) -> float | None:

@@ -8,7 +8,7 @@ import signal
 import time
 
 from . import config as config_mod
-from . import niri, paths, session
+from . import niri, paths, session, titles
 from .store import Store
 from .tracker import Tracker
 
@@ -44,6 +44,7 @@ class Daemon:
         self.idle_restart = asyncio.Event()
         self.niri_connected = False
         self._noted_app: str | None = None
+        self._next_purge = 0.0
 
     def _mtime(self) -> float | None:
         try:
@@ -63,7 +64,7 @@ class Daemon:
         if app_id != self._noted_app:
             self.store.note_app(app_id, _exe_of(win.get("pid")), now)
             self._noted_app = app_id
-        self.tracker.set_focus(app_id, win.get("title"), now)
+        self.tracker.set_focus(app_id, titles.redact(win.get("title")), now)
         log.debug("focus %s", app_id)
 
     def on_niri_lost(self) -> None:
@@ -97,7 +98,19 @@ class Daemon:
             self.idle_restart.set()
         if new.track_titles != self.cfg.track_titles:
             self.tracker.set_track_titles(new.track_titles, time.time())
+        if new.title_retention_days != self.cfg.title_retention_days:
+            self._next_purge = 0.0
         self.cfg = new
+
+    def purge_titles(self, now: float) -> None:
+        if now < self._next_purge:
+            return
+        self._next_purge = now + 3600
+        days = self.cfg.title_retention_days
+        if days > 0:
+            n = self.store.purge_titles(now - days * 86400)
+            if n:
+                log.info("forgot %d window titles older than %d days", n, days)
 
     def write_status(self, now: float) -> None:
         cur = self.tracker.current
@@ -122,6 +135,7 @@ class Daemon:
             wall, mono, boot = clocks()
             self.tracker.heartbeat(wall, mono, boot)
             self.reload_config()
+            self.purge_titles(wall)
             try:
                 self.write_status(wall)
             except OSError as exc:
@@ -147,10 +161,12 @@ class Daemon:
             asyncio.ensure_future(session.watch_logind(self.on_locked, self.on_sleep, self.stop)),
         ]
         await self.stop.wait()
-        self.tracker.stop(time.time())
+        # Cancel the inputs first: their cleanup reports state (e.g. "not idle")
+        # that must not reopen an interval after the final close.
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+        self.tracker.stop(time.time())
         try:
             paths.status_file().unlink()
         except OSError:

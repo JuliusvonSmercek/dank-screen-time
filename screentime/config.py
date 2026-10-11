@@ -19,6 +19,8 @@ class Config:
     idle_timeout: int = 300
     # Store window titles alongside app ids (privacy: off by default).
     track_titles: bool = False
+    # Window titles older than this are deleted (app time is kept). 0 = keep forever.
+    title_retention_days: int = 30
     # Local hour at which a new day starts (0 = midnight).
     day_start_hour: int = 0
     # How often the open interval is flushed to disk (bounds data loss on crash).
@@ -27,6 +29,7 @@ class Config:
     def validate(self) -> "Config":
         self.idle_timeout = max(0, int(self.idle_timeout))
         self.track_titles = bool(self.track_titles)
+        self.title_retention_days = max(0, int(self.title_retention_days))
         self.day_start_hour = min(23, max(0, int(self.day_start_hour)))
         self.heartbeat_seconds = min(60, max(1, int(self.heartbeat_seconds)))
         return self

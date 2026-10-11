@@ -44,6 +44,7 @@ class Tracker:
         self.sleeping = False
         self.current: _Open | None = None
         self._last_beat: _Beat | None = None
+        self.stopped = False
 
     # -- state -------------------------------------------------------------
 
@@ -75,6 +76,8 @@ class Tracker:
             self.current = None
 
     def _apply(self, now: float) -> None:
+        if self.stopped:
+            return  # late callbacks during shutdown must not open new intervals
         wanted = self._wanted()
         if self.current is not None and self.current.key == wanted:
             self.store.extend_interval(self.current.interval_id, now)
@@ -137,3 +140,4 @@ class Tracker:
 
     def stop(self, now: float) -> None:
         self._close(now)
+        self.stopped = True

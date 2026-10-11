@@ -9,6 +9,10 @@ idle_timeout = 300
 # Also store window titles. Off by default for privacy; only affects new data.
 track_titles = false
 
+# Delete window titles older than this many days; the time per app is kept.
+# 0 = keep titles forever.
+title_retention_days = 30
+
 # Local hour at which a new day starts (0 = midnight, 4 = late nights count
 # towards the previous day).
 day_start_hour = 0

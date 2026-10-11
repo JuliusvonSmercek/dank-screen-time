@@ -16,10 +16,12 @@ PopoutComponent {
     property string anchor: ""                 // "" = today / this week
     property string detailAppId: ""
     readonly property string key: kind + ":" + anchor
+    readonly property string detailKey: detailAppId ? key + "|" + detailAppId : ""
 
     readonly property var cacheMap: PluginService.globalVars[pid]?.cache ?? ({})
     readonly property var cli: PluginService.globalVars[pid]?.cli ?? null
     readonly property var entry: cacheMap[key] ?? null
+    readonly property var detailEntry: detailKey ? (cacheMap[detailKey] ?? null) : null
     property var shown: null                   // last data that matched a key, kept while loading
     readonly property bool loading: entry === null
     readonly property var range: shown ? shown.range : null
@@ -41,6 +43,13 @@ PopoutComponent {
 
     function request(force) {
         PluginService.setGlobalVar(pid, "request", { key: key, force: force, t: Date.now() });
+        if (detailKey)
+            PluginService.setGlobalVar(pid, "request", { key: detailKey, force: force, t: Date.now() });
+    }
+
+    onDetailKeyChanged: {
+        if (detailKey)
+            PluginService.setGlobalVar(pid, "request", { key: detailKey, force: true, t: Date.now() });
     }
 
     function normalize(k, iso) {
@@ -537,6 +546,7 @@ PopoutComponent {
                 app: root.detailApp
                 kind: root.kind
                 summary: root.shown
+                titles: root.detailEntry ? (root.detailEntry.data.titles ?? null) : null
                 rangeLabel: root.rangeLabel()
                 onBack: root.detailAppId = ""
 

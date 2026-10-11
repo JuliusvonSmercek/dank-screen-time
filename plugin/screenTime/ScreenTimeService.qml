@@ -7,7 +7,8 @@ import qs.Modules.Plugins
 // `screentime` CLI. Results are published as plugin global vars so every bar
 // pill, popout and desktop widget shares one fetch.
 //
-//   globalVars.screenTime.cache   { "<kind>:<date>": { data, fetchedAt } }  date "" = current
+//   globalVars.screenTime.cache   { "<kind>:<date>[|<app_id>]": { data, fetchedAt } }
+//                                 date "" = current; "|app" adds that app's window titles
 //   globalVars.screenTime.cli     { ok, missing, error }
 //   globalVars.screenTime.request { key, force, t }   written by the UI
 PluginComponent {
@@ -32,10 +33,13 @@ PluginComponent {
     function fetch(key) {
         if (inFlight[key])
             return;
-        const parts = key.split(":");
+        const [rangeKey, app] = key.split("|");
+        const parts = rangeKey.split(":");
         const args = ["summary", "--range", parts[0], "--json"];
         if (parts[1])
             args.push("--date", parts[1]);
+        if (app)
+            args.push("--app", app);
         inFlight[key] = true;
         Proc.runCommand("screenTime." + key, cliCommand(args), (stdout, exitCode) => {
             delete inFlight[key];
@@ -67,7 +71,7 @@ PluginComponent {
 
     function maxAge(key) {
         // Past ranges only change if the day boundary setting changes.
-        return key.endsWith(":") ? 5000 : 600000;
+        return key.split("|")[0].endsWith(":") ? 5000 : 600000;
     }
 
     onRequestChanged: {
@@ -97,10 +101,45 @@ PluginComponent {
         }, 300);
     }
 
+    // plugin setting key -> [config key, convert config value to the setting's type]
+    readonly property var settingMap: ({
+        "idleTimeout": ["idle_timeout", v => String(v)],
+        "trackTitles": ["track_titles", v => !!v],
+        "titleRetention": ["title_retention_days", v => String(v)],
+        "dayStartHour": ["day_start_hour", v => String(v)]
+    })
+    property bool adopted: false
+
     function syncSettings() {
-        pushSetting("idleTimeout", "idle_timeout", pluginData.idleTimeout);
-        pushSetting("trackTitles", "track_titles", pluginData.trackTitles);
-        pushSetting("dayStartHour", "day_start_hour", pluginData.dayStartHour);
+        if (!adopted)
+            return;
+        for (const key in settingMap)
+            pushSetting(key, settingMap[key][0], pluginData[key]);
+    }
+
+    // Settings never touched in the plugin take their value from config.toml,
+    // so the settings page shows what the daemon actually uses.
+    function adoptConfig() {
+        Proc.runCommand("screenTime.configGet", cliCommand(["config", "get"]), (stdout, exitCode) => {
+            let cfg = null;
+            try {
+                cfg = exitCode === 0 ? JSON.parse(stdout) : null;
+            } catch (e) {
+                cfg = null;
+            }
+            if (cfg && pluginService) {
+                for (const key in settingMap) {
+                    const [configKey, convert] = settingMap[key];
+                    if (pluginData[key] === undefined && cfg[configKey] !== undefined) {
+                        const value = convert(cfg[configKey]);
+                        pushed[key] = String(value);
+                        pluginService.savePluginData(pid, key, value);
+                    }
+                }
+            }
+            adopted = true;
+            syncSettings();
+        }, 0);
     }
 
     onPluginDataChanged: syncSettings()
@@ -113,5 +152,5 @@ PluginComponent {
         onTriggered: root.refreshCurrent()
     }
 
-    Component.onCompleted: syncSettings()
+    Component.onCompleted: adoptConfig()
 }

@@ -181,6 +181,15 @@ class TrackerTest(unittest.TestCase):
         # No stop(): what a crash would leave behind.
         self.assertEqual(rows(self.store), [("code", 0, 15)])
 
+    def test_inputs_after_stop_are_ignored(self):
+        self.t.set_focus("code", None, self.c.wall)
+        self.c.advance(10)
+        self.t.stop(self.c.wall)
+        self.t.set_idle(False, self.c.wall)  # e.g. idle watcher cleanup during shutdown
+        self.c.advance(5)
+        self.c.beat(self.t)
+        self.assertEqual(rows(self.store), [("code", 0, 10)])
+
     def test_flicker_intervals_are_dropped(self):
         self.t.set_focus("code", None, self.c.wall)
         self.c.advance(10)
