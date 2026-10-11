@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Modules.Plugins
@@ -143,6 +144,23 @@ PluginComponent {
     }
 
     onPluginDataChanged: syncSettings()
+
+    // `dms ipc call screenTime toggle` / `dms ipc call screenTime open week`
+    // e.g. for a niri keybind. Handled by the bar pill (see ScreenTimeWidget).
+    IpcHandler {
+        target: "screenTime"
+
+        function toggle(): string {
+            PluginService.setGlobalVar(root.pid, "openRequest", { t: Date.now(), kind: "", screen: "", toggle: true });
+            return "ok";
+        }
+
+        function open(view: string): string {
+            const kind = view === "week" ? "week" : "day";
+            PluginService.setGlobalVar(root.pid, "openRequest", { t: Date.now(), kind: kind, screen: "", toggle: false });
+            return "ok";
+        }
+    }
 
     Timer {
         interval: root.refreshMs

@@ -39,7 +39,23 @@ The installer, which needs no root:
 5. installs the DMS plugin into `~/.config/DankMaterialShell/plugins/screenTime`
 
 Then enable **Screen Time** in DMS Settings → Plugins and add it to your bar.
-The desktop widget is added from the desktop widgets settings.
+
+**Desktop widgets** are added from DMS's desktop widget settings; add as many
+as you like. Each instance has its own options: it shows either **Today**
+(hourly chart) or **This week** (daily chart with the average line), and its
+background opacity. A left click opens the bar popout on the same screen in
+the matching view; drag with the right button to move it, as with every DMS
+desktop widget.
+
+**Keybind:** the popout can be toggled over IPC, e.g. in niri's config:
+
+```kdl
+binds {
+    Mod+Shift+T { spawn "dms" "ipc" "call" "screenTime" "toggle"; }
+}
+```
+
+`dms ipc call screenTime open week` opens it directly in the week view.
 
 `./install.sh --dev` symlinks the code and the plugin to the checkout instead
 of copying them, which is handy while hacking. `./uninstall.sh` removes

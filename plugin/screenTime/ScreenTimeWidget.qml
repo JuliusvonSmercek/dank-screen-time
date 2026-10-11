@@ -20,6 +20,57 @@ PluginComponent {
     readonly property bool tracking: today ? today.daemon.running : false
     readonly property real textSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
 
+    // -- open requests (desktop widget click, `dms ipc call screenTime ...`) --
+    // Every bar instance sees the request; the one on the requested screen
+    // claims it at once, the others only after a short grace period, so
+    // exactly one popout opens even with several bars.
+    readonly property string pid: "screenTime"
+    property real handledT: Date.now()
+    property var pendingRequest: null
+
+    function screenName() {
+        return root.parentScreen ? root.parentScreen.name : "";
+    }
+
+    function claim(req) {
+        if (PluginService.getGlobalVar(pid, "openClaim", 0) >= req.t)
+            return;
+        PluginService.setGlobalVar(pid, "openClaim", req.t);
+        if (req.kind)
+            PluginService.setGlobalVar(pid, "lastKind", req.kind);
+        const openOn = PluginService.getGlobalVar(pid, "popoutOpenOn", "");
+        if (req.toggle || openOn !== screenName())
+            root.triggerPopout();
+    }
+
+    Connections {
+        target: PluginService
+        function onGlobalVarChanged(pluginId, varName) {
+            if (pluginId !== root.pid || varName !== "openRequest")
+                return;
+            const req = PluginService.getGlobalVar(root.pid, "openRequest", null);
+            if (!req || req.t <= root.handledT)
+                return;
+            root.handledT = req.t;
+            if (!req.screen || req.screen === root.screenName()) {
+                root.claim(req);
+            } else {
+                root.pendingRequest = req;
+                claimTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: claimTimer
+        interval: 150
+        onTriggered: {
+            if (root.pendingRequest)
+                root.claim(root.pendingRequest);
+            root.pendingRequest = null;
+        }
+    }
+
     horizontalBarPill: Component {
         Row {
             spacing: Theme.spacingXS + 2

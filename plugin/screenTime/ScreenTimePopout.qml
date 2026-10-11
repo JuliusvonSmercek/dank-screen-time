@@ -99,16 +99,51 @@ PopoutComponent {
         chart.replay();
     }
 
+    function popoutScreenName() {
+        const scr = root.parentPopout ? (root.parentPopout.triggerScreen || root.parentPopout.screen) : null;
+        return scr ? scr.name : "";
+    }
+
     Connections {
         target: root.parentPopout
         function onShouldBeVisibleChanged() {
-            if (!root.parentPopout.shouldBeVisible)
+            const visible = root.parentPopout.shouldBeVisible;
+            const here = root.popoutScreenName();
+            if (!visible) {
+                if (PluginService.getGlobalVar(root.pid, "popoutOpenOn", "") === here)
+                    PluginService.setGlobalVar(root.pid, "popoutOpenOn", "");
                 return;
-            // Every open starts at the current period with fresh numbers.
+            }
+            PluginService.setGlobalVar(root.pid, "popoutOpenOn", here);
+            // Every open starts at the current period with fresh numbers, in
+            // the view last chosen (or requested by a desktop widget).
             root.detailAppId = "";
+            root.kind = PluginService.getGlobalVar(root.pid, "lastKind", "day") === "week" ? "week" : "day";
             root.anchor = "";
             root.request(true);
             chart.replay();
+        }
+    }
+
+    // The content is created lazily on the first open, after that open's
+    // visibility change already fired.
+    onParentPopoutChanged: {
+        if (parentPopout && parentPopout.shouldBeVisible)
+            PluginService.setGlobalVar(pid, "popoutOpenOn", popoutScreenName());
+    }
+
+    // A desktop widget clicked while this popout is already open: switch view.
+    Connections {
+        target: PluginService
+        function onGlobalVarChanged(pluginId, varName) {
+            if (pluginId !== root.pid || varName !== "openRequest" || !root.parentPopout || !root.parentPopout.shouldBeVisible)
+                return;
+            const req = PluginService.getGlobalVar(root.pid, "openRequest", null);
+            if (req && req.kind && !req.toggle) {
+                root.detailAppId = "";
+                root.kind = req.kind;
+                root.anchor = "";
+            }
         }
     }
 

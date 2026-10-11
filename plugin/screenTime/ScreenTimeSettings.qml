@@ -8,10 +8,17 @@ PluginSettings {
     id: root
     pluginId: "screenTime"
 
+    // Set by DMS when this page is shown for a single desktop widget instance;
+    // values saved then go to that instance only, so only widget options are shown.
+    property string instanceId: ""
+    property var instanceData: null
+    readonly property bool isInstance: instanceId !== ""
+
     readonly property var today: PluginService.globalVars["screenTime"]?.cache?.["day:"]?.data ?? null
     readonly property var cli: PluginService.globalVars["screenTime"]?.cli ?? null
 
     StyledText {
+        visible: !root.isInstance
         width: parent.width
         wrapMode: Text.WordWrap
         font.pixelSize: Theme.fontSizeSmall
@@ -30,6 +37,7 @@ PluginSettings {
     }
 
     StyledText {
+        visible: !root.isInstance
         width: parent.width
         text: I18n.trFor("screenTime", "Tracking")
         font.pixelSize: Theme.fontSizeLarge
@@ -38,6 +46,7 @@ PluginSettings {
     }
 
     SelectionSetting {
+        visible: !root.isInstance
         settingKey: "idleTimeout"
         label: I18n.trFor("screenTime", "Idle timeout")
         description: I18n.trFor("screenTime", "Stop counting after this long without input. Video players that keep the screen awake still count.")
@@ -55,6 +64,7 @@ PluginSettings {
     }
 
     ToggleSetting {
+        visible: !root.isInstance
         settingKey: "trackTitles"
         label: I18n.trFor("screenTime", "Record window titles")
         description: I18n.trFor("screenTime", "Store window titles alongside apps. Off by default for privacy; applies to new data only.")
@@ -62,6 +72,7 @@ PluginSettings {
     }
 
     SelectionSetting {
+        visible: !root.isInstance
         settingKey: "titleRetention"
         label: I18n.trFor("screenTime", "Keep window titles for")
         description: I18n.trFor("screenTime", "Older titles are deleted; the time spent per app is kept.")
@@ -76,6 +87,7 @@ PluginSettings {
     }
 
     SelectionSetting {
+        visible: !root.isInstance
         settingKey: "dayStartHour"
         label: I18n.trFor("screenTime", "Day starts at")
         description: I18n.trFor("screenTime", "Late-night usage before this hour counts towards the previous day.")
@@ -92,6 +104,7 @@ PluginSettings {
     }
 
     StyledText {
+        visible: !root.isInstance
         width: parent.width
         text: I18n.trFor("screenTime", "Display")
         font.pixelSize: Theme.fontSizeLarge
@@ -100,6 +113,7 @@ PluginSettings {
     }
 
     SelectionSetting {
+        visible: !root.isInstance
         settingKey: "refreshInterval"
         label: I18n.trFor("screenTime", "Refresh interval")
         description: I18n.trFor("screenTime", "How often the bar updates. The popout always refreshes when opened.")
@@ -113,27 +127,61 @@ PluginSettings {
     }
 
     ToggleSetting {
+        visible: !root.isInstance
         settingKey: "showTopAppIcon"
         label: I18n.trFor("screenTime", "Show top app icon")
         description: I18n.trFor("screenTime", "Show the most used app's icon in the bar instead of the hourglass.")
         defaultValue: true
     }
 
-    SliderSetting {
-        settingKey: "desktopOpacity"
-        label: I18n.trFor("screenTime", "Desktop widget background")
-        description: I18n.trFor("screenTime", "Background opacity of the desktop widget.")
-        defaultValue: 85
-        minimum: 0
-        maximum: 100
-        unit: "%"
-    }
 
     StyledText {
+        visible: !root.isInstance
         width: parent.width
         wrapMode: Text.WordWrap
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
         text: I18n.trFor("screenTime", "Categories are edited in ~/.config/screentime/categories.toml.")
+    }
+
+    // -- desktop widget instance -------------------------------------------------
+
+    StyledText {
+        visible: root.isInstance
+        width: parent.width
+        wrapMode: Text.WordWrap
+        font.pixelSize: Theme.fontSizeSmall
+        color: Theme.surfaceVariantText
+        text: I18n.trFor("screenTime", "Tracking options (idle timeout, window titles, …) are in Settings → Plugins → Screen Time.")
+    }
+
+    SelectionSetting {
+        visible: root.isInstance
+        settingKey: "view"
+        label: I18n.trFor("screenTime", "Shows")
+        description: I18n.trFor("screenTime", "Today with an hourly chart, or this week with a daily chart.")
+        options: [
+            { label: I18n.trFor("screenTime", "Today"), value: "day" },
+            { label: I18n.trFor("screenTime", "This week"), value: "week" }
+        ]
+        defaultValue: "day"
+    }
+
+    ToggleSetting {
+        visible: root.isInstance
+        settingKey: "openOnClick"
+        label: I18n.trFor("screenTime", "Open details on click")
+        description: I18n.trFor("screenTime", "Left click opens the Screen Time popout from the bar on the same screen.")
+        defaultValue: true
+    }
+
+    SliderSetting {
+        visible: root.isInstance
+        settingKey: "desktopOpacity"
+        label: I18n.trFor("screenTime", "Background opacity")
+        defaultValue: 85
+        minimum: 0
+        maximum: 100
+        unit: "%"
     }
 }
