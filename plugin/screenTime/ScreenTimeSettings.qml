@@ -25,7 +25,7 @@ PluginSettings {
         color: root.today && root.today.daemon.running ? Theme.surfaceVariantText : Theme.error
         text: {
             if (root.cli && root.cli.missing)
-                return I18n.trFor("screenTime", "The screentime CLI was not found. Run install.sh from the screen-time repository.");
+                return I18n.trFor("screenTime", "The screentime CLI was not found. Run install.sh from the dank-screen-time repository (github.com/JuliusvonSmercek/dank-screen-time).");
             if (!root.today)
                 return I18n.trFor("screenTime", "Checking the tracker…");
             if (!root.today.daemon.running)

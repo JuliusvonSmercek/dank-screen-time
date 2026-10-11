@@ -356,7 +356,7 @@ PopoutComponent {
                     visible: root.cli && root.cli.missing === true && !root.shown
                     icon: "terminal"
                     title: root.tr("Screen Time isn't installed")
-                    body: root.tr("The plugin needs the screentime daemon and CLI. Run the installer from the screen-time repository.")
+                    body: root.tr("The plugin needs the screentime daemon and CLI. Run the installer from the dank-screen-time repository (github.com/JuliusvonSmercek/dank-screen-time).")
                     command: "./install.sh"
                 }
 
