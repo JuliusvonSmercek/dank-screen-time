@@ -13,7 +13,6 @@ PluginComponent {
     layerNamespacePlugin: "screen-time"
 
     readonly property var today: PluginService.globalVars["screenTime"]?.cache?.["day:"]?.data ?? null
-    readonly property var cli: PluginService.globalVars["screenTime"]?.cli ?? null
     readonly property bool showTopApp: pluginData.showTopAppIcon ?? true
     readonly property var topApp: today && today.apps.length ? today.apps[0] : null
     readonly property string totalText: today ? Fmt.durationShort(today.total_seconds) : "--"

@@ -1,307 +1,131 @@
 # Screen Time for niri + DankMaterialShell
 
-A native "Screen Time" for Linux: a small tracker daemon that records which
-app has focus on [niri](https://github.com/YaLTeR/niri), and a
+A native "Screen Time" for Linux: a small daemon that records which app has
+focus on [niri](https://github.com/YaLTeR/niri), and a
 [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) plugin
-that shows where your time goes: a bar pill, a Material 3 popout and a desktop
-widget.
+that shows it as a bar pill, a Material 3 popout and desktop widgets.
 
-- **Accurate on niri.** Focus comes straight from niri's IPC event stream, not
-  from wlr-foreign-toplevel, and app_ids are resolved through `.desktop`
-  files (including Snap and Flatpak), so apps don't show up as "unknown".
-- **Only real use is counted.** Time stops when no window is focused (empty
-  workspace, launcher, overview), when you're idle, when the session is
-  locked, and across suspend/hibernate. Video players that inhibit idle keep
-  counting.
-- **Local and tiny.** Python standard library, SQLite in
-  `~/.local/share/screentime`, no web UI, no network.
+- **Accurate:** focus comes from niri's IPC; app_ids are resolved through
+  `.desktop` files (Snap and Flatpak included), so nothing shows as "unknown".
+- **Only real use counts:** no time for empty workspaces, the launcher, idle,
+  a locked screen or suspend. Video players that keep the screen awake still count.
+- **Local and tiny:** Python standard library, SQLite, no web UI, no network.
 
-## Why
-
-I used [ActivityWatch](https://activitywatch.net/) before, but it never fit
-my desktop: there was no native UI (only a web dashboard), no integration with
-niri or DankMaterialShell, and tracking was unreliable. Time often went
-unrecorded, and many apps showed up as "unknown". This project tracks focus
-directly through niri's IPC and shows the result in the shell itself.
-
-## Requirements
-
-- niri, DankMaterialShell ≥ 1.6
-- `/usr/bin/python3` ≥ 3.11 (Ubuntu 24.04+ is fine)
-- `swayidle` for idle detection: `sudo apt install swayidle`
-- `gdbus` for lock/suspend detection (`libglib2.0-bin`, preinstalled on Ubuntu desktops)
+**Why:** I used [ActivityWatch](https://activitywatch.net/) before, but it had
+no native UI, no niri/DMS integration, often missed time and labelled many
+apps "unknown".
 
 ## Install
 
+Requires niri, DMS ≥ 1.6, `/usr/bin/python3` ≥ 3.11, `swayidle` (idle
+detection: `sudo apt install swayidle`) and `gdbus` (lock/suspend, preinstalled
+on Ubuntu).
+
 ```sh
 git clone <this repo> screen-time && cd screen-time
-./install.sh
+./install.sh            # --dev symlinks instead of copying
 ```
 
-The installer, which needs no root:
+This installs the CLI to `~/.local/bin/screentime`, starts the
+`screentime.service` user unit, writes a default config, generates the
+category mapping from your installed apps, and installs the plugin. Then:
 
-1. copies the code to `~/.local/lib/screentime` and puts the `screentime` CLI in `~/.local/bin`
-2. writes `~/.config/screentime/config.toml` (only if missing)
-3. generates `~/.config/screentime/categories.toml` from your installed apps (existing entries are kept)
-4. installs and starts the `screentime.service` systemd user unit
-5. installs the DMS plugin into `~/.config/DankMaterialShell/plugins/screenTime`
+1. Enable **Screen Time** in DMS Settings → Plugins and add it to your bar.
+2. Optional: add **Screen Time** desktop widgets. Each one shows **Today** or
+   **This week**; a left click opens the popout in that view.
+3. Optional keybind (niri): `Mod+Shift+T { spawn "dms" "ipc" "call" "screenTime" "toggle"; }`
 
-Then enable **Screen Time** in DMS Settings → Plugins and add it to your bar.
+`./uninstall.sh` removes everything except your data (`--purge` removes that too).
 
-**Desktop widgets** are added from DMS's desktop widget settings; add as many
-as you like. Each instance has its own options: it shows either **Today**
-(hourly chart) or **This week** (daily chart with the average line), and its
-background opacity. A left click opens the bar popout on the same screen in
-the matching view; drag with the right button to move it, as with every DMS
-desktop widget.
-
-**Keybind:** the popout can be toggled over IPC, e.g. in niri's config:
-
-```kdl
-binds {
-    Mod+Shift+T { spawn "dms" "ipc" "call" "screenTime" "toggle"; }
-}
-```
-
-`dms ipc call screenTime open week` opens it directly in the week view.
-
-`./install.sh --dev` symlinks the code and the plugin to the checkout instead
-of copying them, which is handy while hacking. `./uninstall.sh` removes
-everything but your data; `./uninstall.sh --purge` removes the data too.
-
-## Using the CLI
+## CLI
 
 ```sh
-screentime status                       # is it running, what is it counting right now
-screentime summary                      # today, human-readable
-screentime summary --range week         # this week (Mon–Sun)
-screentime summary --range day --date 2026-10-01 --json
-screentime apps                         # every app_id seen and how it resolved
-screentime log --limit 20               # raw intervals, newest last
-screentime config set idle_timeout 600
-screentime categories generate          # add entries for newly installed apps
+screentime status                        # running? counting what?
+screentime summary [--range day|week|month] [--date YYYY-MM-DD] [--app ID] [--json]
+screentime apps [--unresolved]           # app_ids seen and how they resolve
+screentime log --limit 20                # raw intervals
+screentime config get | set KEY VALUE
+screentime categories generate           # add newly installed apps
 ```
-
-`summary --json` is the interface the plugin uses. It contains totals, the
-comparison against the 7 days before (days without use count as zero), chart
-buckets (24 hours for a day, 7 days for a week), per-app totals with the app's
-daily history, and per-category totals.
 
 ## Configuration
 
-`~/.config/screentime/config.toml` is reloaded automatically:
+`~/.config/screentime/config.toml` is reloaded automatically. Most keys can
+also be set in the plugin settings.
 
 | key | default | meaning |
 | --- | --- | --- |
-| `idle_timeout` | `300` | seconds without input before time stops counting; `0` disables |
-| `track_titles` | `false` | also store window titles (privacy: off by default) |
-| `title_retention_days` | `30` | delete titles older than this; time per app is kept. `0` = forever |
-| `day_start_hour` | `0` | local hour a new day starts; `4` makes late nights count towards the previous day |
-| `heartbeat_seconds` | `5` | how often the open interval is flushed (max data lost on a crash) |
-| `mcp_enabled` | `false` | allow AI assistants to query usage via `screentime mcp` |
+| `idle_timeout` | `300` | seconds without input before time stops; `0` = off |
+| `track_titles` | `false` | also record window titles (shown per app in the popout) |
+| `title_retention_days` | `30` | delete older titles, keep the time; `0` = forever |
+| `day_start_hour` | `0` | hour a new day starts (`4` = late nights count to the day before) |
+| `heartbeat_seconds` | `5` | flush interval; the most a crash can lose |
+| `mcp_enabled` | `false` | allow AI assistants to read usage (see below) |
 | `mcp_allow_titles` | `false` | also allow them to read window titles |
-| `mcp_max_days` | `90` | how far back MCP queries may look |
+| `mcp_max_days` | `90` | how far back they may query |
 
-The plugin's settings page writes the first four keys for you, plus a few
-display-only options (refresh interval, top-app icon in the bar, desktop
-widget opacity).
-
-## Categories
-
-`~/.config/screentime/categories.toml` maps apps to categories:
-
-```toml
-[apps]
-"code_code" = "Development"        # Visual Studio Code (Snap)
-"firefox_firefox" = "Browsing"
-"whatsapp" = "Communication"       # desktop id: also matches app_id whatsapp-nativefier-d40211
-```
-
-- Keys are either a Wayland app_id (see `screentime apps`) or a desktop file
-  id, so one line also covers apps whose app_id has a random suffix.
-- Category names are free text: rename them, merge them, invent new ones.
-- The installer generates the initial mapping from each app's freedesktop
-  `Categories=` (WebBrowser → Browsing, InstantMessaging/Email →
-  Communication, AudioVideo → Media, Game → Games, Office → Productivity, …).
-- An app that isn't listed is shown under its own name in the category
-  breakdown, never as "unknown".
-
-## Window titles
-
-With `track_titles = true`, clicking an app in the popout also shows which
-windows you used (for a browser, the page titles), ranked by time.
-
-- Titles are cleaned up before grouping: the app's own suffix
-  (" — Mozilla Firefox") and unread counters ("(3) Inbox") are removed.
-- Private-browsing windows are stored only as "Private window", never with
-  their real title.
-- Titles older than `title_retention_days` are deleted; the time per app is kept.
-- Only data recorded after you turn the option on has titles. Earlier time
-  shows up as "Not recorded".
-
-From the CLI: `screentime summary --app firefox_firefox` (add `--json` for
-the plugin format).
+**Categories** live in `~/.config/screentime/categories.toml` as
+`"app_id or desktop id" = "Category"` lines. Names are free text, and unlisted
+apps appear under their own name. **Window titles** are cleaned before grouping
+(no "— Mozilla Firefox", no unread counters), and private-browsing windows are
+stored only as "Private window".
 
 ## AI assistants (MCP)
 
-`screentime mcp` is a read-only [MCP](https://modelcontextprotocol.io) server,
-so an AI assistant can answer questions like "how much did I code this week
-compared to last?".
+`screentime mcp` is a read-only MCP server over **stdio**: the client starts
+it as a subprocess, so no port is opened and no password is needed. Turn on
+"Allow AI assistants to read screen time" in the plugin settings, then register it:
 
-**How it connects:** over **stdio**. The MCP client starts `screentime mcp` as
-its own subprocess and talks to it through stdin/stdout. No server is
-started, no port is opened and no password is needed: only programs you
-configure to launch it can query it.
+- **Claude Code:** `claude mcp add --scope user screentime -- ~/.local/bin/screentime mcp`
+  (without `--scope user` it only works in the current directory).
+- **Claude Desktop:** add this to `~/.config/Claude/claude_desktop_config.json`,
+  then restart the app:
+  `"mcpServers": {"screentime": {"command": "/home/<you>/.local/bin/screentime", "args": ["mcp"]}}`
 
-**Enable it** in the plugin settings ("Allow AI assistants to read screen
-time") or with `screentime config set mcp_enabled true`. While it's off, every
-tool call is refused. Then register it with your client.
+Tools: `get_summary`, `get_app_usage`, `list_apps`, and `get_window_titles`
+(needs `mcp_allow_titles`). Check with `claude mcp list` or `/mcp`. Every call
+is logged to `~/.local/share/screentime/mcp.log`. Remember that whatever
+the tools return is sent to the assistant's provider.
 
-**Claude Code.** Use `--scope user` so it's available in every project. The
-default scope (`local`) registers the server only for the directory you ran
-the command in.
+## How it works
 
-```sh
-claude mcp add --scope user screentime -- ~/.local/bin/screentime mcp
-```
+niri's event stream (`WindowFocusChanged`, `WindowsChanged`, …), swayidle
+(`ext-idle-notify`, respects idle inhibitors) and logind (`LockedHint`,
+`Active`, `PrepareForSleep`) feed a small state machine. It writes intervals
+`(app_id, start, end[, title])` to `~/.local/share/screentime/screentime.db`.
 
-**Claude Desktop** keeps its own list and doesn't read Claude Code's
-settings. Add a top-level `mcpServers` key to its config file
-(`~/.config/Claude/claude_desktop_config.json` on Linux), using the absolute
-path, then fully quit and restart the app. It only reads the list at startup.
+- A heartbeat pushes the open interval's end forward every 5 s, so a crash
+  loses at most 5 s.
+- Comparing `CLOCK_BOOTTIME` with `CLOCK_MONOTONIC` catches suspends even if
+  a logind signal is lost.
+- If niri restarts, the daemon finds its new socket and reconnects.
+- Intervals are split by local day and hour only when queried, so midnight
+  and DST come out right.
 
-```json
-"mcpServers": {
-  "screentime": {
-    "command": "/home/<you>/.local/bin/screentime",
-    "args": ["mcp"]
-  }
-}
-```
-
-**Check that it works:**
-
-- `claude mcp list` should show `screentime: … - √ Connected`;
-  `claude mcp get screentime` shows its scope.
-- In a Claude Code session, `/mcp` lists the server and its tools.
-- Ask something like "how much screen time did I have today?". Every request
-  is logged in `~/.local/share/screentime/mcp.log`.
-- "Connected" only means the client can start the server. If the answers say
-  access is turned off, enable it in the plugin settings.
-
-**Tools:** `get_summary` (day/week/month totals, apps, categories, chart),
-`get_app_usage` (one app's daily history), `list_apps`, and
-`get_window_titles`. The titles tool needs a second switch, "Also share window
-titles" (`mcp_allow_titles`).
-
-**Security and privacy:**
-
-- Read-only: no tool can change config, categories or data.
-- Whatever the tools return goes to the assistant's model provider. Usage
-  patterns, and window titles even more, can be personal.
-- Window titles are untrusted text: for browsers they are page titles chosen
-  by websites, and could contain prompt-injection attempts. They are therefore
-  off by default, stripped of control characters, truncated, and returned in a
-  field marked as untrusted. Don't share titles with a client that can also
-  run shell commands without asking you.
-- Queries are limited to the last `mcp_max_days` days (default 90).
-- Every call (tool and arguments, not the results) is appended to
-  `~/.local/share/screentime/mcp.log`.
-
-## How tracking works
-
-```
-niri IPC event stream ─┐
-swayidle (idle/active) ─┼─► Tracker state machine ─► SQLite intervals (app_id, start, end[, title])
-logind via gdbus ───────┘          ▲
-  LockedHint, Active,              └── heartbeat every 5 s: flush, detect suspend gaps / clock jumps
-  PrepareForSleep
-```
-
-- **Focus:** `WindowsChanged`, `WindowOpenedOrChanged`, `WindowClosed` and
-  `WindowFocusChanged`. `WindowFocusChanged {"id": null}` means a layer-shell
-  surface, an empty workspace or the overview, and counts as no app.
-- **Idle:** swayidle over `ext-idle-notify-v1`. Idle notifications respect
-  idle inhibitors, so a playing video keeps counting. A shell "keep awake"
-  toggle does too.
-- **Lock:** logind's `LockedHint`, which DMS's lock screen sets. A session
-  that isn't the active one (VT switch, other user) counts as locked.
-- **Sleep:** logind's `PrepareForSleep`. As a backup, every heartbeat compares
-  `CLOCK_BOOTTIME` (runs during suspend) with `CLOCK_MONOTONIC` (doesn't), so
-  no interval ever spans a suspend, even if a signal is lost.
-- **Crash safety:** each row always has an `end`, which is pushed forward on
-  every heartbeat. A crash loses at most one heartbeat, and nothing needs
-  repairing on restart.
-- **Reconnects:** if niri restarts, the socket path changes (it contains
-  niri's PID). The daemon looks for the new socket and reconnects with backoff.
-- **Midnight and DST:** intervals are stored in UTC and split along local day
-  and hour boundaries at query time, so midnight rollover and 23/25-hour days
-  come out right.
-
-## Security
-
-- **No network exposure.** Nothing listens on a port. The plugin talks to the
-  CLI as a subprocess, and MCP clients do the same over stdio.
-- **Private files.** The database, `mcp.log` and the runtime status file are
-  created readable by you only (`0700` directories, `0600` files).
-- **Untrusted text.** App ids are chosen by each app, and browser window
-  titles by websites. They are stored with bound SQL parameters, shown as
-  plain text in the UI (never as HTML), escaped when written to
-  `categories.toml`, never used as file paths, and cleaned and marked as
-  untrusted in MCP results.
-- **No shell injection.** The plugin passes arguments to the CLI as separate
-  argv entries, never as a shell string.
-- **What it can't protect against:** any program running as your user can
-  read the database or fake an app_id, just as it can read the rest of your
-  home directory.
+**Security:** nothing listens on the network. Data files are readable by you
+only. App ids and titles (which apps and websites choose) are handled as
+untrusted text: bound SQL parameters, plain-text rendering, escaped TOML,
+cleaned MCP output. Programs running as your user can still read the database.
 
 ## Debugging
 
 ```sh
-systemctl --user status screentime
-journalctl --user -u screentime -f              # focus/idle/lock/sleep transitions
-screentime status                               # stopped / active / idle / locked / no_focus
-screentime apps --unresolved                    # app_ids without a matching .desktop file
-niri msg --json event-stream                    # what niri reports
-dms ipc call plugins reload screenTime           # reload the plugin's top-level files
-journalctl --user -u dms -f | grep -i screen    # plugin QML errors
+journalctl --user -u screentime -f             # focus/idle/lock/sleep transitions
+screentime apps --unresolved                   # odd names? add StartupWMClass or a category line
+journalctl --user -u dms -f | grep -i screen   # plugin errors
+python3 -m unittest discover -s tests -t .     # test suite
 ```
 
-- **An app shows a raw or odd name:** run `screentime apps --unresolved`, then
-  either give it a `StartupWMClass=` in its `.desktop` file or add a category
-  line for the app_id.
-- **Idle never triggers:** check that swayidle is installed (`screentime
-  status` mentions it) and that nothing is inhibiting idle.
-- **The plugin says the tracker isn't running:** `systemctl --user enable
-  --now screentime`.
-- **Plugin development:** DMS's plugin reload cache-busts only the top-level
-  surface files. After editing a helper component (`St*.qml`), restart the
-  shell with `systemctl --user restart dms`.
+After editing a plugin helper (`St*.qml`), restart DMS
+(`systemctl --user restart dms`); `dms ipc call plugins reload screenTime` only
+reloads top-level files.
 
-## Tests
+## Contributing, disclaimer, license
 
-```sh
-python3 -m unittest discover -s tests -t .
-```
+Ideas and improvements are welcome as an [issue](../../issues) or a
+[pull request](../../pulls).
 
-The tests cover the interval logic (focus switches, no-focus, idle, lock,
-logind and clock-gap suspend, lost resume signals, clock jumps, crash
-recovery), aggregation (midnight rollover, DST, day start hour, week bounds,
-7-day averages), niri event handling, logind parsing, app resolution and
-category generation.
+All code was generated by Claude (Anthropic, Claude Opus 5.5). I reviewed it
+and use it daily, but it comes **without any guarantees**.
 
-## Contributing
-
-Ideas, bug reports and further developments are welcome: open an
-[issue](../../issues) or a [pull request](../../pulls).
-
-## Disclaimer
-
-The entire code in this repository was generated by Claude (Anthropic,
-Claude Opus 5.5). I reviewed all of it and use it daily on my own laptop,
-but it comes **without any guarantees**: use it at your own risk.
-
-## License
-
-[MIT](LICENSE): free to use, modify and share, including commercially. Keep
-the copyright notice. Provided "as is", without warranty of any kind.
+[MIT](LICENSE): free to use, modify and share, including commercially; no warranty.
